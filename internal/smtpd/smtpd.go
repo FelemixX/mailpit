@@ -42,7 +42,7 @@ type Handler func(remoteAddr net.Addr, from string, to []string, data []byte) er
 
 // MsgIDHandler function called upon successful receipt of an email. Returns a message ID.
 // Results in a "250 2.0.0 Ok: queued as <message-id>" response.
-type MsgIDHandler func(remoteAddr net.Addr, from string, to []string, data []byte) (string, error)
+type MsgIDHandler func(remoteAddr net.Addr, from string, to []string, data []byte, username *string) (string, error)
 
 // HandlerRcpt function called on RCPT. Return accept status.
 type HandlerRcpt func(remoteAddr net.Addr, from string, to string) bool
@@ -217,7 +217,7 @@ func (srv *Server) Serve(ln net.Listener) error {
 		return ErrServerClosed
 	}
 
-	defer ln.Close()
+	defer func() { _ = ln.Close() }()
 
 	for {
 		// if we are shutting down, don't accept new connections
@@ -229,7 +229,7 @@ func (srv *Server) Serve(ln net.Listener) error {
 
 		conn, err := ln.Accept()
 		if err != nil {
-			if netErr, ok := err.(net.Error); ok && netErr.Temporary() {
+			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 				continue
 			}
 			return err
@@ -255,6 +255,7 @@ type session struct {
 	xClientTrust  bool   // Trust XCLIENT from current IP address
 	tls           bool
 	authenticated bool
+	username      *string // username, nil if not authenticated
 }
 
 // Create new session from connection.
@@ -355,7 +356,9 @@ func (srv *Server) Shutdown(ctx context.Context) error {
 // Function called to handle connection requests.
 func (s *session) serve() {
 	defer atomic.AddInt32(&s.srv.openSessions, -1)
-	defer s.conn.Close()
+	// pass the connection into the defer function to ensure it is closed,
+	// otherwise results in a 5s timeout for each connection
+	defer func(c net.Conn) { _ = c.Close() }(s.conn)
 
 	var from string
 	var gotFrom bool
@@ -516,9 +519,9 @@ loop:
 			// On other errors, allow the client to try again.
 			data, err := s.readData()
 			if err != nil {
-				switch err.(type) {
+				switch err := err.(type) {
 				case net.Error:
-					if err.(net.Error).Timeout() {
+					if err.Timeout() {
 						s.writef("421 4.4.2 %s %s ESMTP Service closing transmission channel after timeout exceeded", s.srv.Hostname, s.srv.AppName)
 					}
 					break loop
@@ -550,7 +553,7 @@ loop:
 				}
 				s.writef("250 2.0.0 Ok: queued")
 			} else if s.srv.MsgIDHandler != nil {
-				msgID, err := s.srv.MsgIDHandler(s.conn.RemoteAddr(), from, to, buffer.Bytes())
+				msgID, err := s.srv.MsgIDHandler(s.conn.RemoteAddr(), from, to, buffer.Bytes(), s.username)
 				if err != nil {
 					checkErrFormat := regexp.MustCompile(`^([2-5][0-9]{2})[\s\-](.+)$`)
 					if checkErrFormat.MatchString(err.Error()) {
@@ -748,7 +751,7 @@ func (s *session) writef(format string, args ...interface{}) {
 	}
 
 	line := fmt.Sprintf(format, args...)
-	fmt.Fprintf(s.bw, "%s\r\n", line)
+	_, _ = fmt.Fprintf(s.bw, "%s\r\n", line)
 	_ = s.bw.Flush()
 
 	if Debug {
@@ -883,7 +886,8 @@ func (s *session) makeEHLOResponse() (response string) {
 		}
 	}
 
-	response += "250 ENHANCEDSTATUSCODES"
+	response += "250-ENHANCEDSTATUSCODES\r\n"
+	response += "250 SMTPUTF8" // last entry must use a space instead of a dash
 	return
 }
 
@@ -916,6 +920,12 @@ func (s *session) handleAuthLogin(arg string) (bool, error) {
 
 	// Validate credentials.
 	authenticated, err := s.srv.AuthHandler(s.conn.RemoteAddr(), "LOGIN", username, password, nil)
+	if authenticated {
+		uname := string(username)
+		s.username = &uname
+	} else {
+		s.username = nil
+	}
 
 	return authenticated, err
 }
