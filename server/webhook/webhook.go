@@ -16,6 +16,10 @@ var (
 	// RateLimit is the minimum number of seconds between requests
 	RateLimit = 1
 
+	// Delay is the number of seconds to wait before sending each webhook request
+	// This can  allow for other processing to complete before the webhook is triggered.
+	Delay = 0
+
 	rl rate.Sometimes
 
 	rateLimiterSet bool
@@ -38,6 +42,11 @@ func Send(msg any) {
 	}
 
 	go func() {
+		// Apply delay if configured
+		if Delay > 0 {
+			time.Sleep(time.Duration(Delay) * time.Second)
+		}
+
 		rl.Do(func() {
 			b, err := json.Marshal(msg)
 			if err != nil {
@@ -58,19 +67,18 @@ func Send(msg any) {
 				req.Header.Set("Mailpit-Label", config.Label)
 			}
 
-			client := &http.Client{}
+			client := &http.Client{Timeout: 5 * time.Second}
 			resp, err := client.Do(req)
 			if err != nil {
 				logger.Log().Errorf("[webhook] error sending data: %s", err.Error())
 				return
 			}
+			defer func() { _ = resp.Body.Close() }()
 
 			if resp.StatusCode < 200 || resp.StatusCode > 299 {
 				logger.Log().Warnf("[webhook] %s returned a %d status", config.WebhookURL, resp.StatusCode)
 				return
 			}
-
-			_ = resp.Body.Close()
 		})
 	}()
 }

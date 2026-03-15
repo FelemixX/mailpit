@@ -79,7 +79,7 @@ sudo sh < <(curl -sL https://raw.githubusercontent.com/axllent/mailpit/develop/i
 You can also change the install path to something else by setting the `INSTALL_PATH` environment, for example:
 
 ```shell
-INSTALL_PATH=/usr/bin sudo sh < <(curl -sL https://raw.githubusercontent.com/axllent/mailpit/develop/install.sh)
+sudo INSTALL_PATH=/usr/bin sh < <(curl -sL https://raw.githubusercontent.com/axllent/mailpit/develop/install.sh)
 ```
 
 
@@ -115,3 +115,10 @@ Please refer to [the documentation](https://mailpit.axllent.org/docs/install/tes
 Mailpit's SMTP server (default on port 1025), so you will likely need to configure your sending application to deliver mail via that port. 
 A common MTA (Mail Transfer Agent) that delivers system emails to an SMTP server is `sendmail`, used by many applications, including PHP. 
 Mailpit can also act as substitute for sendmail. For instructions on how to set this up, please refer to the [sendmail documentation](https://mailpit.axllent.org/docs/install/sendmail/).
+
+---
+
+<p align="center">
+  For team features, multiple inboxes, and a hosted setup, try
+  <a href="https://mailtrap.io/?ref=mailpit">Mailtrap</a>, our friendly companion.
+</p>
