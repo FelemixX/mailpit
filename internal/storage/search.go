@@ -86,8 +86,19 @@ func Search(search, timezone string, start int, beforeTS int64, limit int) ([]Me
 	}
 
 	// set tags for listed messages only
-	for i, m := range results {
-		results[i].Tags = getMessageTags(m.ID)
+	if len(results) > 0 {
+		ids := make([]string, len(results))
+		for i, m := range results {
+			ids[i] = m.ID
+		}
+		tagMap := getTagsForIDs(ids)
+		for i, m := range results {
+			if tags, ok := tagMap[m.ID]; ok {
+				results[i].Tags = tags
+			} else {
+				results[i].Tags = []string{}
+			}
+		}
 	}
 
 	elapsed := time.Since(tsStart)
@@ -454,7 +465,7 @@ func searchQueryBuilder(searchString, timezone string) *sqlf.Stmt {
 				q.Where("Attachments > 0")
 			}
 		} else if strings.HasPrefix(lw, "after:") {
-			w = cleanString(w[6:])
+			w = strings.ToUpper(cleanString(w[6:]))
 			if w != "" {
 				t, err := dateparse.ParseIn(w, loc)
 				if err != nil {
@@ -469,7 +480,7 @@ func searchQueryBuilder(searchString, timezone string) *sqlf.Stmt {
 				}
 			}
 		} else if strings.HasPrefix(lw, "before:") {
-			w = cleanString(w[7:])
+			w = strings.ToUpper(cleanString(w[7:]))
 			if w != "" {
 				t, err := dateparse.ParseIn(w, loc)
 				if err != nil {

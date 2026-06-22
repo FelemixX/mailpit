@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -42,11 +43,26 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	decoder := json.NewDecoder(r.Body)
+	if config.MaxMessageSize > 0 {
+		r.Body = http.MaxBytesReader(w, r.Body, int64(config.MaxMessageSize)*1024*1024)
+	}
+
+	// Read body before decoding so that MaxBytesReader errors are returned directly.
+	// In Go 1.26+, json.Decoder wraps reader errors in *json.SyntaxError, which
+	// prevents errors.As from finding *http.MaxBytesError to return a 413.
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			w.WriteHeader(http.StatusRequestEntityTooLarge)
+		}
+		httpJSONError(w, err.Error())
+		return
+	}
 
 	data := sendMessageParams{}
 
-	if err := decoder.Decode(&data.Body); err != nil {
+	if err := json.NewDecoder(bytes.NewReader(body)).Decode(&data.Body); err != nil {
 		httpJSONError(w, err.Error())
 		return
 	}

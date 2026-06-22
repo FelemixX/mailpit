@@ -216,7 +216,7 @@ export default {
 
 		resizeIframe(el) {
 			const i = el.target;
-			if (typeof i.contentWindow.document.body.scrollHeight === "number") {
+			if (i.contentWindow?.document?.body) {
 				i.style.height = i.contentWindow.document.body.scrollHeight + 50 + "px";
 			}
 		},
@@ -226,10 +226,8 @@ export default {
 				return;
 			}
 			const h = document.getElementById("preview-html");
-			if (h) {
-				if (typeof h.contentWindow.document.body.scrollHeight === "number") {
-					h.style.height = h.contentWindow.document.body.scrollHeight + 50 + "px";
-				}
+			if (h?.contentWindow?.document?.body) {
+				h.style.height = h.contentWindow.document.body.scrollHeight + 50 + "px";
 			}
 		},
 
@@ -785,6 +783,7 @@ export default {
 						:srcdoc="sanitizedHTML"
 						frameborder="0"
 						style="width: 100%; height: 100%; background: #fff"
+						sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
 						@load="resizeIframe"
 					>
 					</iframe>

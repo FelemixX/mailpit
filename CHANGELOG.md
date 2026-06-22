@@ -2,6 +2,138 @@
 
 Notable changes to Mailpit will be documented in this file.
 
+## [v1.30.2]
+
+### Security
+- Fix incomplete SSRF protection in IsInternalIP() detection for IPv6 transition mechanisms (GHSA-w4mc-hhc6-xp28)
+
+### Feature
+- Add wait support to readyz ([#697](https://github.com/axllent/mailpit/issues/697))
+
+### Chore
+- Compress websocket messages once per broadcast to improve performance ([#695](https://github.com/axllent/mailpit/issues/695))
+- Toggle websocket compression using HTTP compression setting
+- Update Github Actions  dependencies
+- Update Go dependencies
+- Update node dependencies
+
+### Fix
+- Adjust header setting order in error response functions ([#699](https://github.com/axllent/mailpit/issues/699))
+
+### Test
+- Add readyz tests
+
+
+## [v1.30.1]
+
+### Security
+- Extend request body size cap to all JSON API endpoints (GHSA-28pq-6qxg-wg5r)
+- Pin Github Actions workflow versions using full commit SHA
+- Do not use npm cache to prevent cache poisoning
+- Disable GitHub Actions credential persistence for checkout steps
+
+### Chore
+- Enhance schema application logging ([#688](https://github.com/axllent/mailpit/issues/688))
+- Change log level to Info for database vacuuming message ([#688](https://github.com/axllent/mailpit/issues/688))
+- Update Github Action workflows
+- Update Go dependencies
+- Update node dependencies
+- Update caniemail test database
+
+
+## [v1.30.0]
+
+### Security
+- Set a default 50MB p/m limit to prevent DoS via unlimited SMTP DATA and /api/v1/send body sizes (GHSA-fpxj-m5q8-fphw)
+- Include CGNAT (Carrier-Grade NAT) in internal IP checks (GHSA-j3fj-qppj-fmmc)
+- Block internal IP access by default in HTML check (GHSA-j3fj-qppj-fmmc)
+- Fix for path traversal & arbitrary file write in mailpit dump --http via attacker-controlled message IDs (GHSA-qx5x-85p8-vg4j)
+- Fix concurrent map read & write in proxy CSS rewriter (GHSA-w4vj-r5pg-3722)
+
+### Feature
+- New loading indicator, reduce flash during message transitions ([#682](https://github.com/axllent/mailpit/issues/682))
+
+### Chore
+- Remove gorilla/mux dependency and replace with stdlib routing
+- Remove logrus dependency and implement slog-based logging
+- Remove go-telnet dependency and implement TCP/Unix socket handling for SMTP
+- Replace lithammer/shortuuid with custom shortuuid implementation and update tests
+- Improve iframe height adjustment with optional chaining
+- Bump axios version to v1.16.0
+- Refactor Prometheus metrics implementation and remove unused dependencies
+- Refactor MarkRead and MarkUnread functions to only broadcast changes of modified messages
+- Optimize tag retrieval by batching message IDs in List and Search functions
+- Enhance SetMessageTags function to improve tag handling and batch deletions
+- Optimize MarkRead and MarkUnread functions to reduce database calls and improve performance
+- Refactor pruneMessages function to eliminate duplicate ID checks using a map
+- Refactor addMessageTag function to remove mutex and ensure safe concurrent inserts
+- Refactor Hub to use atomic clientCount for safe concurrent client tracking
+- Ensure websocket connection is closed on client unregistration
+- Simplify writePump by using WriteMessage and remove unnecessary newline handling
+- Add message dump max-message-size flag and refactor message handling
+- Add message ingest max-message-size flag and refactor message handling
+- Update Go dependencies
+- Update node dependencies
+- Update caniemail test database
+
+### Fix
+- Validate SMTP XCLIENT args before processing
+
+### Build
+- Update CI actions to use `npm ci`
+- Tag Docker edge build with next patch versions
+
+
+## [v1.29.7]
+
+### Chore
+- Bump vue-router from 4.6.4 to 5.0.4
+- Bump axios version to 1.15.0
+- Update Go dependencies
+- Update node dependencies
+
+
+## [v1.29.6]
+
+### Chore
+- Bump docker/login-action from 3 to 4 ([#670](https://github.com/axllent/mailpit/issues/670))
+- Bump actions/stale from 10.1.1 to 10.2.0 ([#669](https://github.com/axllent/mailpit/issues/669))
+- Bump docker/setup-buildx-action from 3 to 4 ([#668](https://github.com/axllent/mailpit/issues/668))
+- Bump docker/setup-qemu-action from 3 to 4 ([#666](https://github.com/axllent/mailpit/issues/666))
+- Bump docker/build-push-action from 6 to 7 ([#665](https://github.com/axllent/mailpit/issues/665))
+- Update Go dependencies
+- Update node dependencies
+
+### Fix
+- Version check logic in version command and self updater ([#673](https://github.com/axllent/mailpit/issues/673))
+
+
+## [v1.29.5]
+
+### Security
+- Add sandbox attribute to message iframe for extra later of security (already protected via CSP headers)
+
+### Feature
+- Add option to disable auto-VACUUMing of the SQLite database ([#661](https://github.com/axllent/mailpit/issues/661))
+
+### Chore
+- Update Go dependencies
+- Update node dependencies
+
+
+## [v1.29.4]
+
+### Feature
+- Add filter functionality to message headers tab
+
+### Chore
+- Update Go dependencies
+- Update node dependencies
+
+### Fix
+- Refactor webhook delay & rate limit logic to ignore endpoint response times & prevent hardcoded 1000 message limit when set to 0 ([#656](https://github.com/axllent/mailpit/issues/656))
+
+
 ## [v1.29.3]
 
 ### Security
